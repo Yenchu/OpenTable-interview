@@ -20,7 +20,7 @@ public class UrlInfo {
 
     public static final int SHORT_URL_LENGTH = 7;
 
-    public static final String SHORT_URL_FORMAT = "^[a-zA-Z0-9]+$";
+    public static final String SHORT_URL_FORMAT = "^[a-zA-Z\\d]+$";
 
     @Id
     @NotBlank(message = "Short URL can not be empty}")
