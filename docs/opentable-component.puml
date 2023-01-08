@@ -1,0 +1,53 @@
+@startuml "reportingcomponent"
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+title
+<b>Component Diagram for Reporting System</b>
+end title
+
+ContainerQueue_Ext(guest_topic, "Guest Topic", "Kafka", "Stores guest raw data")
+ContainerQueue_Ext(transaction_topic, "Transaction Topic", "Kafka", "Stores POS transaction raw data")
+ContainerQueue_Ext(reservation_topic, "Reservation Topic", "Kafka", "Stores reservation raw data")
+
+Container_Boundary(rawdataprocessor, "Data processor") {
+    Component(guest_processor, "Guest Data Processor", "Java, Kafka Streams", "Ingests guest data and saves it to data store")
+    Component(transaction_processor, "Transaction Data Processor", "Java, Kafka Streams", "Ingests POS transaction data and saves it to data store")
+    Component(reservation_processor, "Reservation Data Processor", "Java, Kafka Streams", "Ingests reservation data, enriches it with guest and transaction data, sends it to reservation details queue")
+    ComponentQueue(reservation_details_topic, "Reservation Details Topic", "Kafka", "Stores reservation details data")
+    Component(reservation_aggregation_processor, "Reservation Aggregation Processor", "Java, Kafka Streams", "Ingests reservation details data, aggregates total amount paid and total visits, saves it to data store")
+}
+
+Container_Boundary(reportingdatastore, "Reporting Data Store") {
+    Component(guest_collection, "Guest Collection", "MongoDB", "Stores guest data")
+    Component(transaction_collection, "Transaction Collection", "MongoDB", "Stores POS transaction data")
+    Component(reservation_aggregation_collection, "Reservation Aggregation Collection", "MongoDB", "Stores data of total amount paid and total visits by a guest to a restaurant")
+    Component(reservation_details_collection, "Reservation Details Collection", "MongoDB", "Stores reservation details data including total amount paid and total visits")
+}
+
+Container(reporting_api, "Reporting API", "Java, Spring Boot", "Provides APIs for users to query reports")
+
+Lay_R(guest_topic, transaction_topic)
+Lay_R(transaction_topic, reservation_topic)
+Lay_R(reservation_details_topic, reservation_aggregation_processor)
+
+Lay_R(reservation_aggregation_collection, reservation_details_collection)
+
+Rel_D(guest_topic, guest_processor, "Consumes", "Kafka")
+Rel_D(transaction_topic, transaction_processor, "Consumes", "Kafka")
+Rel_D(reservation_topic, reservation_processor, "Consumes", "Kafka")
+
+Rel(guest_processor, guest_collection, "Writes", "MongoDB")
+Rel(transaction_processor, transaction_collection, "Writes", "MongoDB")
+
+Rel(reservation_processor, guest_collection, "Reads", "MongoDB")
+Rel(reservation_processor, transaction_collection, "Reads", "MongoDB")
+Rel_R(reservation_processor, reservation_details_topic, "Produces", "Kafka")
+
+Rel_R(reservation_details_topic, reservation_aggregation_processor, "Consumes", "Kafka")
+Rel(reservation_aggregation_processor, reservation_aggregation_collection, "Reads/Writes", "MongoDB")
+Rel(reservation_aggregation_processor, reservation_details_collection, "Writes", "MongoDB")
+
+Rel_U(reporting_api, reservation_details_collection, "Queries", "MongoDB")
+@enduml

@@ -1,0 +1,45 @@
+@startuml "reportingdeployment"
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+LAYOUT_WITH_LEGEND()
+
+title 
+<b>Deployment Diagram for Reporting System</b>
+end title
+
+Deployment_Node(reportingsystem, "Reporting System", "Reporting System Deployment") {
+    Boundary(kafkacluster, "Kafka Cluster") {
+        Deployment_Node(broker, "Broker") {
+            ContainerQueue(raw_data_topic, "Data Topic", "Kafka")
+        }
+    }
+    Boundary(streamappcluster, "Kubernetes") {
+        Deployment_Node(streamappinst, "Stream Application Instance") {
+            Container(raw_data_processor, "Data Processor", "Java, Kafka Streams")
+        }
+    }
+    Boundary(mongodbcluster, "MongoDB Cluster") {
+        Deployment_Node(mongodbnode, "MongoDB Node") {
+            ContainerDb(reporting_data_store, "Reporting Data Store", "MongoDB")
+        }
+    }
+    Boundary(apiappcluster, "Kubernetes") {
+        Deployment_Node(apiappinst, "API Application Instance") {
+            Container(reporting_api, "Reporting API", "Java, Spring Boot")
+        }
+    }
+}
+
+Boundary(infr, "Infrastructure") {
+    Container(alb, "Application Load Balancer")
+    Container(waf, "Web Application Firewall")
+}
+
+Rel_D(raw_data_topic, raw_data_processor, "Consumes", "Kafka")
+
+Rel_R(raw_data_processor, reporting_data_store, "Reads/Writes", "MongoDB")
+Rel_L(reporting_api, reporting_data_store, "Queries", "MongoDB")
+
+Rel_U(alb, reporting_api, "Forwards", "HTTPS")
+Rel_U(waf, alb, "Forwards", "HTTPS")
+@enduml
