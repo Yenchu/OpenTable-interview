@@ -95,6 +95,7 @@ public class ExceptionHandler extends WebFluxResponseStatusExceptionHandler {
             Throwable cause = ex.getCause();
             if (cause != null) {
                 setResponseStatus(response, cause);
+                statusSet = true;
             }
         }
         if (!statusSet) {

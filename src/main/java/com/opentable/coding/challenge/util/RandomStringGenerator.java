@@ -8,7 +8,7 @@ public class RandomStringGenerator {
 
     public static String generate(int strLen) {
         //  lowercase alphabets are from 97 to 122. uppercase alphabets are from 65 to 90
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         for (int i = 0; i < strLen; i++) {
             int n = random.nextInt(52);
             char c;
